@@ -3,7 +3,10 @@
   "description": "Element to edit existing library product on the Ordercloud platform",
   "main": "oc-library-product-product-edit.html",
   "dependencies": {
-    "polymer": "Polymer/polymer#^1.4.0"
+    "polymer": "Polymer/polymer#^1.4.0",
+    "oc-product-library-api": "git://github.com/oc-elements/oc-product-library-api#1.x",
+    "paper-input": "PolymerElements/paper-input#^1.1.18",
+    "paper-toggle-button": "PolymerElements/paper-toggle-button#^1.2.0"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",

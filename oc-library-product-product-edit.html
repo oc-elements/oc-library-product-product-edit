@@ -1,10 +1,15 @@
 <link rel="import" href="../polymer/polymer.html">
 
+<link rel="import" href="../oc-product-library-api/oc-product-library-api.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
+
 <!--
 `oc-library-product-product-edit`
 Element to edit existing library product on the Ordercloud platform
 
-@demo demo/index.html 
+@demo demo/index.html
 -->
 
 <dom-module id="oc-library-product-product-edit">
@@ -12,22 +17,173 @@ Element to edit existing library product on the Ordercloud platform
     <style>
       :host {
         display: block;
+        margin-right: 20px;
+        padding-bottom: 10px;
+      }
+
+      .toggleItem {
+        max-width:200px;
+        margin: 10px 0px 0px 0px ;
+        @apply(--layout-horizontal);
+        @apply(--layout-justified);
+      }
+
+      paper-button {
+        margin: 10px 0;
+      }
+
+      div[prefix] {
+        margin-right: 10px;
       }
     </style>
-    <h2>Hello [[prop1]]</h2>
+
+    <oc-product-library-api id="prodApi"></oc-product-library-api>
+
+    <paper-input
+            id="prodName"
+            value="{{product.name}}"
+            label="Product Name"
+            always-float-label
+            required
+            auto-validate
+            error-message="Please provide a name"
+    ></paper-input>
+
+    <paper-input
+            value="{{product.sku}}"
+            always-float-label
+            label="SKU"
+    ></paper-input>
+
+    <paper-input
+            id="shortDescription"
+            value="{{product.shortDescription}}"
+            label="Short Description"
+            always-float-label
+            required
+            auto-validate
+            error-message="Please provide a short description"
+    ></paper-input>
+
+    <paper-textarea
+            id="description"
+            value="{{product.description}}"
+            label="Full Description"
+            always-float-label
+            required
+            auto-validate
+            error-message="Please provide a full description"
+    ></paper-textarea>
+
+    <paper-input
+            id="price"
+            value="{{product.price}}"
+            label="Price"
+            always-float-label
+            required
+            auto-validate
+            error-message="Please provide a price"
+    >
+      <div prefix><strong>R </strong></div>
+    </paper-input>
+
+    <div class="toggleItem">
+      <iron-label>[[ _onlineAvailabilityChanged(product.availableOnline) ]] online</iron-label>
+      <paper-toggle-button checked="{{product.availableOnline}}"></paper-toggle-button>
+    </div>
+
+    <div class="toggleItem">
+      <iron-label>Options Plu Flat Mapping is [[ _flatmapping(product.availableOnline) ]]</iron-label>
+      <paper-toggle-button checked="{{product.optionsPluFlatMappingEnabled}}"></paper-toggle-button>
+    </div>
+
+    <paper-button raised on-tap="_updateProduct">Update Product</paper-button>
+
   </template>
 
   <script>
     Polymer({
 
       is: 'oc-library-product-product-edit',
+      behaviors: [OC.Behaviours.ApiConsumer],
 
       properties: {
-        prop1: {
-          type: String,
-          value: 'oc-library-product-product-edit',
+        organisationId: Number,
+        loaded: Boolean,
+        productId : {
+          type: Number,
+          computed: "_computeProductId(product)"
         },
+        product: Object,
       },
+
+      observers: [
+        "refresh(product)",
+      ],
+
+      refresh : function(){
+
+        if (!this.product || this.loaded) {
+          return
+        }
+
+        this.stockAvailable = !!this.product.stockLevel;
+        this.loaded = true;
+
+      },
+
+      _computeProductId : function(product){
+        return product.id;
+      },
+
+      getProduct : function(){
+
+        this.$.optionApi.getOptionSets(1, -1)
+                .then(this._setPropertyResponseResults.bind(this, 'product'))
+                .catch(this.fire.bind(this, 'options_error', 'Could not load product'))
+                .finally(this.set.bind(this, 'loading', false));
+      },
+
+      _flatmapping: function(value) {
+        return   (value) ? 'enabled' : 'disabled';
+      },
+
+
+      _onlineAvailabilityChanged: function(value) {
+        return   (value) ? 'Available' : 'Unavailable';
+      },
+
+      _updateProduct : function(e){
+
+        if(!this._validateAll()){
+          return
+        }
+
+        var params = {}
+
+        params.price  = this.product.price
+        params.name = this.product.name
+        params.shortDescription = this.product.shortDescription
+        params.description = this.product.description
+        params.sku = this.product.sku
+        params.availableOnline = this.product.availableOnline
+        params.optionsPluFlatMappingEnabled = this.product.optionsPluFlatMappingEnabled
+
+        this.$.prodApi.updateProduct(this.productId, params)
+                .then(this._setPropertyResponseResults.bind(this, 'product'))
+                .catch(this.fire.bind(this, 'options_error', 'Could not update product'))
+                .finally(this.set.bind(this, 'loading', false));
+      },
+
+      _validateAll : function(){
+        return (
+                this.$.prodName.validate() &&
+                this.$.shortDescription.validate() &&
+                this.$.description.validate() &&
+                this.$.price.validate()
+        )
+      }
+
 
     });
   </script>
